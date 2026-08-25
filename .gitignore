@@ -1,0 +1,42 @@
+# Build
+target/
+build/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+nbproject/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (relay-ui)
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Local environment - never commit these, personal-hardware build (Ticket 0)
+.env
+.env.local
+*.local.yml
+secrets/
+
+# Model + data volumes from docker-compose
+.data/
+ollama/
+
+# Generated artefacts
+relay-app/target/spring-modulith-docs/
+relaybench/scoreboard/runs/
+*.log

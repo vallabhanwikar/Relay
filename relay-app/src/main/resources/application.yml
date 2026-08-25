@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: relay
+
+  datasource:
+    url: ${RELAY_DB_URL:jdbc:postgresql://localhost:5432/relay}
+    username: ${RELAY_DB_USER:relay}
+    password: ${RELAY_DB_PASSWORD:relay}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate never creates or alters a table: an Evidence Package
+      # references rows by id, and a schema that can change under it is a schema that can
+      # invalidate published evidence.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  threads:
+    # Virtual threads. The orchestration work is IO-heavy - sandbox runs, model calls, git
+    # fetches - which is exactly the shape they are good at.
+    virtual:
+      enabled: true
+
+  # Event publication registry. Cross-module events are persisted before the listener runs, so
+  # a listener failure becomes a retryable row rather than a lost event. This is what replaces
+  # the message broker Section 5 deliberately rules out.
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: true
+      republish-outstanding-events-on-restart: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,modulith
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    com.relay: DEBUG
+
+relay:
+  # Adaptive verification depth policy (Section 6). Recorded in every Evidence Package so a
+  # reviewer can see which stages were skipped and why.
+  proof:
+    depth-policy:
+      safe: STANDARD
+      risky: FULL
+      breaking: FULL
+    sandbox:
+      network: none
+      cpu-limit: "2"
+      memory-limit: 4g
+      timeout: PT15M
+    # A test suite killing fewer than this share of mutants has its E2 verdicts marked WEAK.
+    mutation-strength-threshold: 0.60
+
+  gateway:
+    default-tier: DETERMINISTIC
+    allow-escalation: true
+    ollama:
+      base-url: ${OLLAMA_URL:http://localhost:11434}

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.relay</groupId>
+    <artifactId>relay-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Relay</name>
+    <description>
+        Relay is an integration evidence engine: it detects third-party API changes, maps blast
+        radius, verifies (or generates) the fix, and emits an auditable Evidence Package.
+    </description>
+
+    <!--
+        Maven module layout is deliberately shallow. Relay is a MODULAR MONOLITH, not a set of
+        microservices (v2 plan, Section 6). The nine application modules - ingestion, detection,
+        repository, impact, proof, evidence, repair, gateway, delivery - live as PACKAGES inside
+        relay-app and have their boundaries enforced at build time by Spring Modulith + ArchUnit.
+        Splitting them into Maven modules would buy compile-time enforcement we already get from
+        ModularityTests, at the cost of the build complexity a solo builder cannot afford.
+    -->
+    <modules>
+        <module>relay-app</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-boot.version>3.5.4</spring-boot.version>
+        <spring-modulith.version>1.4.0</spring-modulith.version>
+
+        <archunit.version>1.4.0</archunit.version>
+        <jqwik.version>1.9.2</jqwik.version>
+        <javaparser.version>3.26.4</javaparser.version>
+        <openapi-diff.version>2.0.1</openapi-diff.version>
+        <pitest.version>1.17.4</pitest.version>
+        <pitest-junit5.version>1.2.1</pitest-junit5.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.modulith</groupId>
+                <artifactId>spring-modulith-bom</artifactId>
+                <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+
+                <!--
+                    PIT mutation testing. Section 6 of the plan makes test-suite strength a
+                    first-class input to the Evidence Package: a suite that kills <60% of mutants
+                    downgrades its own E2 verdicts to WEAK. Bound to a profile, not the default
+                    lifecycle - mutation runs are too slow for every commit.
+                -->
+                <plugin>
+                    <groupId>org.pitest</groupId>
+                    <artifactId>pitest-maven</artifactId>
+                    <version>${pitest.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.pitest</groupId>
+                            <artifactId>pitest-junit5-plugin</artifactId>
+                            <version>${pitest-junit5.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <targetClasses>
+                            <param>com.relay.detection.*</param>
+                            <param>com.relay.impact.*</param>
+                            <param>com.relay.proof.*</param>
+                        </targetClasses>
+                        <mutationThreshold>60</mutationThreshold>
+                        <outputFormats>
+                            <outputFormat>HTML</outputFormat>
+                            <outputFormat>XML</outputFormat>
+                        </outputFormats>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>mutation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

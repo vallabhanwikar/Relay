@@ -1,0 +1,107 @@
+# Relay development environment - Ticket 2.
+#
+# One command brings up everything Relay needs locally: `docker compose up -d` (aliased as
+# `make dev-up`). Every service here is named in Section 7 of the v2 plan; nothing else belongs
+# in this file, because "zero ops sprawl" is a stated design constraint of the modular monolith.
+
+name: relay
+
+services:
+
+  # PostgreSQL 16 with pgvector. System of record AND similarity search for "have we seen this
+  # change pattern before" - one database, no separate vector store, no graph database.
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: relay-postgres
+    environment:
+      POSTGRES_USER: relay
+      POSTGRES_PASSWORD: relay
+      POSTGRES_DB: relay
+      # Temporal gets its own databases on the same instance rather than its own server.
+      POSTGRES_MULTIPLE_DATABASES: temporal,temporal_visibility
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./ops/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relay -d relay"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Redis - sandbox slot locking and rate limiting. Not a cache for domain data.
+  redis:
+    image: redis:7-alpine
+    container_name: relay-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Temporal - durable, replayable verification workflows. Its replay model is also the
+  # determinism lesson the TLA+ spec targets.
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    container_name: relay-temporal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: relay
+      POSTGRES_PWD: relay
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  temporal-ui:
+    image: temporalio/ui:2.31.2
+    container_name: relay-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8233:8080"
+
+  # Ollama - local coding model. Free iteration; local-first by design.
+  # Pull the model once the stack is up:  docker exec relay-ollama ollama pull qwen2.5-coder:7b
+  ollama:
+    image: ollama/ollama:latest
+    container_name: relay-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+  # Jaeger - OpenTelemetry traces across workflow, model calls and sandbox runs.
+  # The screenshots from here feed the blog posts.
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: relay-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+volumes:
+  postgres-data:
+  redis-data:
+  ollama-data:
