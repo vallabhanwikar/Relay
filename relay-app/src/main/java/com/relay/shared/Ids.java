@@ -60,6 +60,12 @@ public final class Ids {
         }
     }
 
+    public record ObligationId(UUID value) {
+        public static ObligationId random() {
+            return new ObligationId(UUID.randomUUID());
+        }
+    }
+
     public record BenchCaseId(String value) {
     }
 }

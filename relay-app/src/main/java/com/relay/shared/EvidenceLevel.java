@@ -29,8 +29,18 @@ public enum EvidenceLevel {
     /** WireMock traffic replay plus semantic diff - behaviour under real recorded traffic. */
     E5_BEHAVIOURAL,
 
-    /** TLA+/TLC over the verification workflow. The documented ceiling of the ladder. */
-    E6_FORMAL;
+    /**
+     * Bounded formal analysis: JBMC up to a loop bound, Apalache or TLC up to a depth. Exhaustive
+     * within its bounds and silent beyond them, so the bounds travel with every verdict.
+     */
+    E6A_BOUNDED_FORMAL,
+
+    /**
+     * Unbounded formal proof: a Z3 validity result, an OpenJML proof, an Apalache inductive
+     * invariant check. The ceiling of the ladder, and still scoped to one named obligation and its
+     * stated assumptions - never "this code is verified" (design v3, claim boundary).
+     */
+    E6B_FORMAL_PROOF;
 
     /** True when this level is strong enough to carry a verdict on its own. */
     public boolean isLoadBearing() {

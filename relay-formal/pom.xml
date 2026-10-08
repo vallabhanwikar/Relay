@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.relay</groupId>
+        <artifactId>relay-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>relay-formal</artifactId>
+    <name>Relay Formal</name>
+    <description>
+        Formal verifiers as plain libraries: no Spring, no I/O beyond what a verifier needs. The
+        first verifier is the Z3 schema-compatibility prover (design v3, UC2/UC3). The proof module
+        in relay-app adapts these verifiers to obligations; this module never sees an obligation,
+        a patch or a database, which keeps every proof reproducible from its inputs alone.
+    </description>
+
+    <dependencies>
+        <!--
+            Z3 with its native libraries bundled and unpacked at runtime (MIT). Pinned exactly:
+            every verdict records the solver version, and a silent solver upgrade is a change in
+            what "PROVEN" means.
+        -->
+        <dependency>
+            <groupId>tools.aqua</groupId>
+            <artifactId>z3-turnkey</artifactId>
+            <version>${z3-turnkey.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Each check opens its own Z3 context; parallel forks would only add
+                         native-library unpacking races for no gain at this size. -->
+                    <forkCount>1</forkCount>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,51 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Example Payments API", "version": "1.0.0"},
+  "paths": {
+    "/payments/{id}": {
+      "get": {
+        "responses": {
+          "200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Payment"}}}}
+        }
+      }
+    },
+    "/payments": {
+      "post": {
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreatePayment"}}}},
+        "responses": {
+          "201": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Payment"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Payment": {
+        "type": "object",
+        "required": ["id", "status", "amount", "legacyRef"],
+        "properties": {
+          "id":        {"type": "string", "maxLength": 36},
+          "status":    {"type": "string", "enum": ["PAID", "FAILED"]},
+          "amount":    {"$ref": "#/components/schemas/Money"},
+          "legacyRef": {"type": "string"}
+        }
+      },
+      "Money": {
+        "type": "object",
+        "required": ["value", "currency"],
+        "properties": {
+          "value":    {"type": "number", "minimum": 0, "multipleOf": 0.01},
+          "currency": {"type": "string", "enum": ["INR", "USD", "EUR"]}
+        }
+      },
+      "CreatePayment": {
+        "type": "object",
+        "required": ["amount"],
+        "properties": {
+          "amount": {"$ref": "#/components/schemas/Money"},
+          "memo":   {"type": "string", "maxLength": 140}
+        }
+      }
+    }
+  }
+}

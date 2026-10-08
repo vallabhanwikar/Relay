@@ -8,7 +8,7 @@ import java.time.Instant;
 /**
  * A verification run has finished. Consumed by evidence to assemble the package.
  *
- * <p>{@code verdict} may be {@link Verdict#INCONCLUSIVE} - a sandbox timeout or an unbuildable
+ * <p>{@code verdict} may be {@link Verdict#UNPROVEN} - a sandbox timeout or an unbuildable
  * consumer repo is a real outcome that must reach the reviewer, not an error to swallow.
  */
 public record ProofCompleted(
