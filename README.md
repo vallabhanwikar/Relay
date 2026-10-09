@@ -7,9 +7,10 @@ code, verifies (or generates) the fix, and emits an auditable **Evidence Package
 
 The Evidence Package — not the patch — is the product.
 
-> **Status: Phase 0.** This repository is a skeleton. The module boundaries, the build, and the
-> tests that enforce those boundaries are real; the modules themselves are stubs carrying the
-> ticket numbers that will fill them. Nothing below describes working software yet.
+> **Status: v3, Phase 1 in progress.** The first formal verifier is real. [`relay-formal`](relay-formal/)
+> proves, with Z3, whether a schema change can break a given consumer, or returns a concrete JSON
+> counterexample. The application modules are still Phase 0 stubs that carry the ticket numbers
+> that will fill them. See [ADR 0001](docs/adr/0001-v3-formal-first.md) for the v3 decision.
 
 ---
 
@@ -54,7 +55,8 @@ Every verdict Relay records carries exactly one level. Model confidence is never
 | **E3** | Generative | jqwik properties, fuzzed inputs |
 | **E4** | Adversarial | PIT mutation score over affected classes |
 | **E5** | Behavioural | WireMock traffic replay + semantic diff |
-| **E6** | Formal | TLA+/TLC over the verification workflow |
+| **E6a** | Bounded formal | JBMC to a loop bound, Apalache/TLC to a depth |
+| **E6b** | Formal proof | Z3 schema compatibility, OpenJML contracts, inductive invariants |
 
 Two consequences the proof engine implements:
 
@@ -113,7 +115,7 @@ module's `package-info.java` and saying why.
 | Spec diffing | openapi-diff + custom taxonomy | Proven differ; own the semantic layer |
 | Testing | JUnit 5, jqwik, Testcontainers, PIT, ArchUnit | The proof engine must itself be verified software |
 | Replay | WireMock + custom normaliser | Record/replay third-party traffic without touching real providers |
-| Formal | TLA+ / TLC | Model-check the verification workflow's concurrency |
+| Formal | Z3, OpenJML, JBMC, TLA+ (TLC, Apalache) | One verifier per obligation kind; `relay-formal` holds them as plain libraries |
 | AI | Spring AI (Ollama local, vLLM prod) | Model portability; the engine is indifferent to who wrote the patch |
 
 **Deliberate NOs:** no API gateway, no generic monitoring, no auto-deploy, no fine-tuning, no

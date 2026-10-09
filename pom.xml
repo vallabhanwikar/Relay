@@ -23,8 +23,16 @@
         relay-app and have their boundaries enforced at build time by Spring Modulith + ArchUnit.
         Splitting them into Maven modules would buy compile-time enforcement we already get from
         ModularityTests, at the cost of the build complexity a solo builder cannot afford.
+
+        relay-formal is the one exception, and it is not an application module: it holds the
+        formal verifiers (Z3 today; OpenJML, JBMC and Apalache adapters later) as plain libraries
+        with no Spring and no database. A separate artifact keeps a proof reproducible from its
+        inputs with one jar, and keeps solver native code out of the application's test classpath
+        until the proof module wires it in (design v3).
     -->
     <modules>
+        <!-- Formal verifiers as plain libraries (design v3). Built first; no Spring inside. -->
+        <module>relay-formal</module>
         <module>relay-app</module>
     </modules>
 
@@ -42,6 +50,9 @@
         <openapi-diff.version>2.0.1</openapi-diff.version>
         <pitest.version>1.17.4</pitest.version>
         <pitest-junit5.version>1.2.1</pitest-junit5.version>
+
+        <!-- Every formal verdict records the solver version; bump deliberately, never by range. -->
+        <z3-turnkey.version>4.14.1</z3-turnkey.version>
     </properties>
 
     <dependencyManagement>
@@ -91,6 +102,7 @@
                     </dependencies>
                     <configuration>
                         <targetClasses>
+                            <param>com.relay.formal.*</param>
                             <param>com.relay.detection.*</param>
                             <param>com.relay.impact.*</param>
                             <param>com.relay.proof.*</param>
